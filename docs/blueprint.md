@@ -166,11 +166,143 @@ flowchart LR
 ## 5. Безопасность агентской цепочки
 
 ### 5.1 Sequence diagram: threat-model → api-contract → apply
-<!-- Вставить Mermaid-диаграмму. -->
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Разработчик
+    participant BS as Backstage UI
+    participant PERM as Permission Framework
+    participant ORCH as Orchestrator
+    participant AG as AI Agent (LLM + MCP Client)
+    participant MCP as MCP Server
+    participant CAT as Software Catalog
+    participant RAG as RAG (pgvector)
+    participant SEC as Security Champion
+    participant API as openapi-diff
+    participant KYV as Kyverno
+    participant ARGO as ArgoCD
+
+    Note over U,BS: N4 — threat-model
+    U->>BS: "сгенерируй threat model для сервиса X"
+    BS->>PERM: check(user, "threatmodel:generate", X)
+    PERM-->>BS: ALLOW
+    BS->>ORCH: POST /threat-model {entity_ref, user_jwt}
+    ORCH->>AG: invoke(task, context, user_jwt)
+    AG->>MCP: catalog.getEntity(X)
+    MCP->>CAT: getEntity(X)
+    CAT-->>MCP: {owner, deps, data_classification}
+    MCP-->>AG: entity context
+    AG->>MCP: rag.query(threat patterns)
+    MCP->>RAG: similarity search
+    RAG-->>MCP: ADR + прошлые threat models
+    MCP-->>AG: retrieved context
+    AG->>MCP: kyverno.dryRun(manifest X)
+    MCP->>KYV: dry-run admission
+    KYV-->>MCP: {violations, warnings}
+    MCP-->>AG: policy findings
+    AG-->>ORCH: draft threat model (STRIDE + citations)
+    ORCH->>BS: render draft + diff + citations
+    alt data_classification = high/critical
+        BS->>SEC: async sign-off
+        SEC->>BS: approve / edit
+        BS->>ORCH: sign-off recorded (audit)
+    else medium/low
+        U->>BS: approve draft
+        BS->>ORCH: sign-off recorded (audit)
+    end
+
+    Note over U,BS: N6 — api-contract
+    U->>BS: "сгенерируй OpenAPI + проверь совместимость"
+    BS->>PERM: check(user, "apicontract:generate", X)
+    PERM-->>BS: ALLOW
+    BS->>ORCH: POST /api-contract {entity_ref, user_jwt}
+    ORCH->>AG: invoke(task, user_jwt)
+    AG->>MCP: catalog.getDependents(X)
+    MCP->>CAT: getDependents(X)
+    CAT-->>MCP: список потребителей + контракты
+    MCP-->>AG: dependency contracts
+    AG->>MCP: openapiDiff(old, new)
+    MCP->>API: openapi-diff
+    API-->>MCP: {breaking, non_breaking}
+    MCP-->>AG: diff report
+    AG-->>ORCH: draft contract + breaking changes
+    ORCH->>BS: render diff + затронутые потребители
+    U->>BS: approve contract
+    BS->>ORCH: contract accepted (audit + version bump)
+
+    Note over U,ARGO: N9 — apply
+    U->>BS: "задеплой в staging"
+    BS->>PERM: check(user, "deploy:staging", X)
+    PERM-->>BS: ALLOW
+    BS->>ORCH: POST /deploy {env=staging, user_jwt}
+    ORCH->>AG: prepare manifests (Golden Path)
+    AG->>MCP: crossplane.render(X, env)
+    MCP-->>AG: manifests
+    AG-->>ORCH: manifests
+    ORCH->>KYV: admission review
+    alt policy violation
+        KYV-->>ORCH: DENY + violations
+        ORCH-->>BS: blocked (ссылка на policy)
+    else pass
+        KYV-->>ORCH: ALLOW
+        ORCH->>ARGO: commit to GitOps (author=user)
+        ARGO->>ARGO: sync + canary rollout
+        ARGO-->>BS: deployment status
+    end
+```
 ### 5.2 Поток авторизации MCP Server
-<!-- Вставить Mermaid-диаграмму. -->
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Разработчик
+    participant BS as Backstage UI
+    participant ORCH as Orchestrator
+    participant MCP as MCP Server (микросервис)
+    participant PERM as Permission Framework
+    participant IDP as Identity Provider
+    participant TOOL as External Tool
+    participant AUD as Audit Log
+
+    Note over U,IDP: 1 — Аутентификация
+    U->>BS: login (OIDC)
+    BS->>IDP: authorization_code flow
+    IDP-->>BS: id_token + access_token (JWT)
+    BS->>BS: сохранить JWT (httpOnly session)
+    BS->>ORCH: POST /agent/invoke {prompt, entity_ref}<br/>Authorization: Bearer <jwt>
+    ORCH->>ORCH: валидация JWT (signature, exp, aud)
+    ORCH->>PERM: check(jwt, "agent:invoke")
+    PERM-->>ORCH: ALLOW + scoped permissions
+
+    Note over ORCH,MCP: 2 — Token Exchange (RFC 8693) + mTLS
+    ORCH->>IDP: token exchange (jwt → scoped token, aud=mcp)
+    IDP-->>ORCH: scoped JWT (TTL 30–60s)
+    ORCH->>MCP: POST /mcp/tools/call<br/>Authorization: Bearer <scoped><br/>mTLS (client cert оркестратора)
+    MCP->>MCP: валидация mTLS + scoped JWT
+    MCP->>PERM: introspect(scoped) — активен, не отозван
+    PERM-->>MCP: active, permissions
+
+    Note over MCP,TOOL: 3 — Tool-call с проверкой прав
+    MCP->>MCP: валидация params (JSON Schema)<br/>+ allowlist инструмента
+    MCP->>PERM: check(scoped, "catalog:read", entity_ref)
+    alt DENY
+        PERM-->>MCP: DENY
+        MCP->>AUD: log(permission_denied, user, tool, entity)
+        MCP-->>ORCH: 403 {error: forbidden, tool}
+        Note over ORCH: санитизация: не пробрасывать<br/>детали прав в LLM
+        ORCH->>ORCH: circuit breaker: 2 forbidden → стоп
+        ORCH-->>BS: 403 + безопасное сообщение
+        BS-->>U: "Нет доступа к X. Запросите права."
+    else ALLOW
+        PERM-->>MCP: ALLOW
+        MCP->>TOOL: вызов от имени user
+        TOOL-->>MCP: результат
+        MCP->>AUD: log(tool_call, user, tool, params_hash)
+        MCP-->>ORCH: 200 + результат
+        ORCH->>ORCH: агент получает результат<br/>и продолжает цепочку
+    end
+```
 ### 5.3 Hardening
 - **Token Exchange (RFC 8693):** scoped-токен с `aud=mcp-server`, TTL 30–60 с. См. ADR-0003.
 - **Mid-flight revocation:** `introspect` с Redis-кэшем TTL 5–10 с + события отзыва сессий от IdP.
