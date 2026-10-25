@@ -1,0 +1,77 @@
+﻿name: Docs CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - '.github/workflows/docs-ci.yml'
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '.github/workflows/docs-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  markdownlint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v23
+        with:
+          globs: '**/*.md'
+          fix: false
+
+  lychee:
+    name: Link Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --root-dir "$(pwd)" --verbose --no-progress './**/*.md'
+          fail: true
+          jobSummary: true
+
+  mermaid:
+    name: Mermaid Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install mermaid-cli
+        run: npm install -g @mermaid-js/mermaid-cli@11.16.0
+      - name: Validate Mermaid blocks
+        run: |
+          mkdir -p /tmp/mermaid
+          awk '
+            /```mermaid/ { flag=1; file="/tmp/mermaid/diagram-" ++count ".mmd"; next }
+            /```/ && flag { flag=0; close(file); next }
+            flag { print > file }
+          ' docs/blueprint.md
+
+          if [ ! -f /tmp/mermaid/diagram-1.mmd ]; then
+            echo "No Mermaid blocks found in docs/blueprint.md"
+            exit 0
+          fi
+
+          failed=0
+          for f in /tmp/mermaid/*.mmd; do
+            echo "Validating $f"
+            if ! mmdc -i "$f" -o "${f%.mmd}.svg" -p /dev/null 2>/dev/null; then
+              echo "::error file=$f::Mermaid syntax error"
+              failed=1
+            fi
+          done
+          exit $failed

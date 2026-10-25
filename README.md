@@ -1,4 +1,5 @@
-![Status](https://img.shields.io/badge/status-draft-yellow)
+﻿![Status](https://img.shields.io/badge/status-draft-yellow)
+![Docs CI](https://github.com/realrvs/idp-blueprint/actions/workflows/docs-ci.yml/badge.svg)
 # IDP Blueprint: AI-Augmented Platform Engineering
 
 Репозиторий содержит blueprint целевой архитектуры Internal Developer Platform
