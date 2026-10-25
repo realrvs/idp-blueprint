@@ -2,9 +2,8 @@
 
 > **Статус:** Draft
 > **Версия:** v0.1
-> **Владелец:** Platform Team
-> **Последнее обновление:** YYYY-MM-DD
-> **Связанные ADR:** [ADR-0001](adr/0001-composition-engine.md), [ADR-0002](adr/0002-kargo-vs-rollouts.md), [ADR-0003](adr/0003-token-exchange-mcp.md)
+> **Последнее обновление:** 2026-10-25
+> **Связанные ADR:** [ADR-0001](adr/0001-composition-engine.md), [ADR-0002](adr/0002-kargo-vs-rollouts.md), [ADR-0003](adr/0003-token-exchange-mcp.md), [ADR-0005](adr/0005-rag-vs-mcp.md)
 
 ---
 
@@ -82,6 +81,7 @@ MCP — в «полноценного клиента платформенных 
 **Принцип:** RAG выставляется как один из инструментов MCP-сервера,
 а не как единственный канал знаний. Агент сам решает, когда искать по документам,
 а когда — запрашивать живой API. См. ADR-0005.
+
 ---
 
 ## 3. Технологический стек
@@ -233,10 +233,11 @@ flowchart LR
 | Перекос в сторону RAG: агент ищет всё в документах, хотя часть знаний — в API | Явное разделение в 2.6 + инструкция в system prompt: «для статуса/каталога/политик — вызывай MCP-инструмент, не ищи в RAG» |
 
 ### 9.2 Открытые вопросы
-- [ ] Выбор движка композиции — ADR-0001.
-- [ ] Нужен ли Kargo на текущем масштабе — ADR-0002.
-- [ ] Политика хранения аудит-логов — ADR-0004.
-- [ ] Выбор LLM-модели для self-hosted.
+- [ ] Выбор движка композиции — ADR-0001 (Proposed)
+- [ ] Нужен ли Kargo на текущем масштабе — ADR-0002 (Proposed)
+- [ ] Token Exchange для MCP — ADR-0003 (Proposed; нужен sign-off от IdP-команды)
+- [ ] Политика хранения аудит-логов — ADR-0004 (Proposed)
+- [ ] Выбор LLM-модели для self-hosted — ADR будет создан после утверждения требований
 
 ---
 
@@ -257,4 +258,6 @@ flowchart LR
 - [ADR-0001: Выбор движка композиции](adr/0001-composition-engine.md)
 - [ADR-0002: Kargo vs Argo Rollouts](adr/0002-kargo-vs-rollouts.md)
 - [ADR-0003: Token Exchange для MCP](adr/0003-token-exchange-mcp.md)
+- [ADR-0004: Политика аудит-логов](adr/0004-audit-log-policy.md)
+- [ADR-0005: RAG vs MCP](adr/0005-rag-vs-mcp.md)
 - [ADR-0004: Политика аудит-логов](adr/0004-audit-log-policy.md)
