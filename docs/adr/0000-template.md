@@ -1,7 +1,8 @@
 ﻿# ADR-NNNN: <Краткое название решения>
 
 - **Статус:** Proposed | Accepted | Rejected | Superseded by ADR-XXXX
-- **Дата:** YYYY-MM-DD
+- **Дата создания:** YYYY-MM-DD
+- **Дата утверждения:** — (заполняется при переводе в Accepted)
 - **Авторы:** <имена>
 - **Контекст blueprint:** [docs/blueprint.md](../blueprint.md)
 
