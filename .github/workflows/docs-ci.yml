@@ -66,11 +66,18 @@ jobs:
             exit 0
           fi
 
+          # Puppeteer config: отключаем sandbox (обязательно для GitHub Actions)
+          cat > /tmp/puppeteer-config.json <<'JSON'
+          {
+            "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+          }
+          JSON
+
           failed=0
           for f in /tmp/mermaid/*.mmd; do
             echo "Validating $f"
-            if ! mmdc -i "$f" -o "${f%.mmd}.svg" -p /dev/null 2>/dev/null; then
-              echo "::error file=$f::Mermaid syntax error"
+            if ! mmdc -i "$f" -o "${f%.mmd}.svg" -p /tmp/puppeteer-config.json; then
+              echo "::error file=$f::Mermaid render failed"
               failed=1
             fi
           done
