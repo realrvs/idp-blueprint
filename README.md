@@ -1,4 +1,5 @@
-﻿# IDP Blueprint: AI-Augmented Platform Engineering
+![Status](https://img.shields.io/badge/status-draft-yellow)
+# IDP Blueprint: AI-Augmented Platform Engineering
 
 Репозиторий содержит blueprint целевой архитектуры Internal Developer Platform
 с интеграцией AI/RAG и агентской цепочки.
