@@ -2,7 +2,7 @@
 
 - **Статус:** Proposed
 - **Дата:** YYYY-MM-DD
-- **Авторы:** <имена>
+- **Авторы:** Platform Team
 - **Контекст blueprint:** [docs/blueprint.md](../blueprint.md)
 
 ## Контекст и проблема

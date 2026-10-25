@@ -427,4 +427,3 @@ sequenceDiagram
 - [ADR-0003: Token Exchange для MCP](adr/0003-token-exchange-mcp.md)
 - [ADR-0004: Политика аудит-логов](adr/0004-audit-log-policy.md)
 - [ADR-0005: RAG vs MCP](adr/0005-rag-vs-mcp.md)
-- [ADR-0004: Политика аудит-логов](adr/0004-audit-log-policy.md)
