@@ -54,3 +54,4 @@ MCP определяет протокол, через который модел�
 - [Blueprint](../blueprint.md)
 - Раздел 2.6 (RAG vs MCP)
 - Раздел 5.4 (Circuit Breaker)
+

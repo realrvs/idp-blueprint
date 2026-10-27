@@ -3,7 +3,7 @@
 > **Статус:** Draft
 > **Версия:** v0.1
 > **Последнее обновление:** 2026-10-25
-> **Связанные ADR:** [ADR-0001](adr/0001-composition-engine.md), [ADR-0002](adr/0002-kargo-vs-rollouts.md), [ADR-0003](adr/0003-token-exchange-mcp.md), [ADR-0005](adr/0005-rag-vs-mcp.md)
+> **Связанные ADR:** [ADR-0001](adr/0001-composition-engine.md), [ADR-0002](adr/0002-kargo-vs-rollouts.md), [ADR-0003](adr/0003-token-exchange-mcp.md), [ADR-0005](adr/0005-rag-vs-mcp.md), [ADR-0006](adr/0006-git-provider-and-ci-engine.md)
 
 ---
 
@@ -79,6 +79,9 @@ Golden Path — это стандартизированный путь от «х
 - **Argo Rollouts** обеспечивает прогрессивную доставку: canary или blue-green с автоматическим откатом по метрикам Prometheus (Analysis Templates).
 - **Kargo** (опционально) добавляет оркестрацию промоушена между 3+ окружениями с approval-гейтами. Начинать с Kargo не нужно — см. ADR-0002.
 
+
+> **Примечание (Git-провайдер):** В качестве источника правды для GitOps используется Git-репозиторий. В зависимости от требований инфраструктуры, это может быть GitLab, GitHub или **GitVerse** (см. [ADR-0006](adr/0006-git-provider-and-ci-engine.md)). Выбор провайдера не влияет на работу ArgoCD, так как он синхронизируется с любым Git-репозиторием по стандартным протоколам.
+
 Слой 3 не знает, что источником манифестов может быть агент. Для ArgoCD это просто коммит в Git. Это важно: агент не получает прямого доступа к кластеру, он лишь готовит манифесты, которые проходят через те же guardrails (см. 2.4), что и ручные изменения.
 ### 2.4 Слой 4 — Guardrails
 
@@ -126,6 +129,7 @@ MCP — в «полноценного клиента платформенных 
 | Интерфейс | Backstage | Стандарт де-факто, CNCF | OpenChoreo | Нужна готовая сборка «из коробки» |
 | Композиция | Crossplane | Мультиоблачность, декларативность | ACK | Глубоко в AWS, мультиоблачность не нужна |
 | Доставка | ArgoCD + Rollouts | GitOps, canary | Flux + Flagger | Предпочтение команды |
+| Доставка (Git) | GitLab / GitHub / **GitVerse** | Стандартные Git-провайдеры; GitVerse — для on-premise и импортозамещения | — | См. ADR-0006 |
 | Политики | Kyverno | Простота, CNCF | OPA Gatekeeper | Нужна сложная логика на Rego |
 | Векторная БД | pgvector | Одна БД для всего | Qdrant | Нужна быстрая фильтрация на больших объемах |
 | LLM | Ollama (self-hosted) | Нет передачи данных в облако | Облачный провайдер | Нужна недоступная локально модель |
@@ -427,3 +431,7 @@ sequenceDiagram
 - [ADR-0003: Token Exchange для MCP](adr/0003-token-exchange-mcp.md)
 - [ADR-0004: Политика аудит-логов](adr/0004-audit-log-policy.md)
 - [ADR-0005: RAG vs MCP](adr/0005-rag-vs-mcp.md)
+- [ADR-0006: Выбор Git-провайдера и CI-движка](adr/0006-git-provider-and-ci-engine.md)
+
+
+
